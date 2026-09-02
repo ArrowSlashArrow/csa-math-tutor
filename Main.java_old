@@ -1,0 +1,85 @@
+import java.util.List;
+import java.util.Optional;
+import java.util.Scanner;
+
+public class Main {
+    private Solver current_solver;
+    private boolean is_running;
+    private final String WELCOME_MESSAGE = "Hello.";
+    private final String SOLVER_QUERY = "Pick a solver to run: ";
+    private final List<Solver> AVAILABLE_SOLVERS = List.of(Solver.PrimeFinder);
+    private Scanner scanner;
+    
+    public static void main(String[] args) {
+        Main program = new Main();
+        program.run();
+    }
+
+    public void run() {
+        // TODO: load user settings
+
+        this.scanner = new Scanner(System.in);
+
+        while (this.is_running) {
+            switch (this.pick_solver()) {
+                case Optional<Solver> solver when solver.isPresent() -> solver.get().solve(); 
+                case Optional<Solver> o when o.isEmpty() -> this.is_running = false;
+                default -> break;
+                    // do nothing
+            }
+        }
+    }
+
+    // Returns None if the user quits the program
+    private Optional<Solver> pick_solver() {
+        int idx = 1;
+        for (Solver s : AVAILABLE_SOLVERS) {
+            System.out.println("%d. %s");
+        }
+        while (true) { 
+            System.out.print(SOLVER_QUERY);
+            String line = this.scanner.nextLine();
+            int n;
+            try {
+                n = Integer.parseInt(line);
+            } catch (NumberFormatException e) {
+                System.out.println("Please type an integer.");
+                continue;
+            }
+
+            if (n >= 1 && n <= AVAILABLE_SOLVERS.size()) {
+                return Optional.of(AVAILABLE_SOLVERS.get(n - 1));
+            }
+        }
+        // 1. parse to int
+        // 2. check if it is in [1, n)
+        // 3. if either check fails, re-run it
+    }
+}
+
+/**
+ * All solvers available to the user.
+ */
+enum Solver {
+    PrimeFinder;
+
+    public void solve() {
+        switch (this) {
+            case Solver.PrimeFinder -> this.find_prime();
+        }
+    }
+
+    public void find_prime() {
+        // and then we do the thing
+    }
+}
+
+
+/**
+ * User config
+ */
+
+// TODO: add config options to this class; uncomment if/when they are needed
+// class Config {
+//     public 
+// }
