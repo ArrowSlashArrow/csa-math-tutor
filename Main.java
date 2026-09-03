@@ -1,5 +1,8 @@
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
+// proof of concept
 public class Main {
     private static Scanner s = new Scanner(System.in);
     private static final String IN_STR = """
@@ -10,21 +13,36 @@ public class Main {
 
             > """;
     public static void main(String[] args) {
-        System.out.print(IN_STR);
-        System.out.flush(); // we're using print with no \n at the end
-        String input = s.nextLine();
-        switch (input) {
-            case "1" -> {
-                int n = find_prime();
-                if (n != -1) {
-                    System.out.println("The nth prime number is " + n + ".");
-                }
-            }
+        // System.out.print(IN_STR);
+        // System.out.flush(); // we're using print with no \n at the end
+        // String input = s.nextLine();
+        // switch (input) {
+        //     case "1" -> {
+        //         int n = find_prime();
+        //         if (n != -1) {
+        //             System.out.println("The nth prime number is " + n + ".");
+        //         }
+        //     }
                 
-            case "2" -> {
+        //     case "2" -> {
+        //         return;
+        //     }
+        //     default -> System.out.println("Invalid input.");
+        // }
+
+        List<Solver> solvers = List.of(Solver.PrimeFinder);
+
+        MainUI main = new MainUI();
+        while (true) { 
+            Optional<Solver> s = main.choose_solver(solvers);
+            if (s.isEmpty()) {
+                // quit program
                 return;
             }
-            default -> System.out.println("Invalid input.");
+
+            // otherwise, run solver
+            Solver solver = s.get();
+            solver.get_solver_fn().run();
         }
     
     }
