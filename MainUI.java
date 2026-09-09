@@ -5,22 +5,18 @@ import java.util.Scanner;
 
 public class MainUI {
     private static Scanner s = new Scanner(System.in);
-    private static final String IN_STR = """
-            Welcome to mathematics brother.
-            Select an option:
-            1. Find the nth prime
-            2. exit
+    private static final String IN_STR = "Welcome to mathematics brother.";
+    private static final List<String> OPTIONS = List.of("Find the n-th prime", "exit");
 
-            > """;
     // returns `Some(solver)` if the user chooses a solver
     // returns `None` if the user chooses to exit the program
     public Optional<Solver> choose_solver(List<Solver> solvers) {
-        // TODO: write query function
-
-        System.out.print(IN_STR);
-        System.out.flush(); // we're using print with no \n at the end
-        String input = s.nextLine();
-        switch (input) {
+        SelectorBox s = new SelectorBox();
+        Optional<String> result = s.get_option(OPTIONS);
+        
+        // todo
+        
+         {
             case "1" -> {return Optional.of(Solver.PrimeFinder);}
             case "2" -> {return Optional.empty();}
             default -> {

@@ -1,4 +1,5 @@
 
+import java.util.Optional;
 import java.util.Scanner;
 
 public enum Solver {
@@ -29,13 +30,13 @@ class PrimeFinder implements Solve {
     private static Scanner s = new Scanner(System.in);
     @Override
     public void run() {
-        int result = find_prime();
-        if (result != -1) {
-            System.out.println("The nth prime number is " + result);
+        Optional<Integer> result = find_prime();
+        if (result.isPresent()) {
+            System.out.println("The nth prime number is " + result.get());
         }
     }
 
-    public static int find_prime() {
+    public static Optional<Integer> find_prime() {
         System.out.print("""
             Enter `n` to find the n-th prime:
             > """);
@@ -46,17 +47,17 @@ class PrimeFinder implements Solve {
             n = Integer.parseInt(s.nextLine());
         } catch (Exception e) {
             System.out.println("Invalid input");
-            return -1;
+            return Optional.empty();
         } 
 
         if (n < 1) {
             System.out.println("invalid input. n must be > 0");
-            return - 1;
+            return Optional.empty();
         }
 
         // 2, 3, 5, 7, 11, 13, ...
-        if (n == 1) return 2;
-        if (n == 2) return 3;
+        if (n == 1) return Optional.of(2);
+        if (n == 2) return Optional.of(3);
 
         int found = 2;
         int i = 3;
@@ -67,7 +68,7 @@ class PrimeFinder implements Solve {
             }
         }
 
-        return i;
+        return Optional.of(i);
     }
 
     public static boolean is_prime(int n) {
