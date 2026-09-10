@@ -11,20 +11,12 @@ public class MainUI {
     // returns `Some(solver)` if the user chooses a solver
     // returns `None` if the user chooses to exit the program
     public Optional<Solver> choose_solver(List<Solver> solvers) {
-        SelectorBox s = new SelectorBox();
-        Optional<String> result = s.get_option(OPTIONS);
-        
         // todo
-        
-         {
-            case "1" -> {return Optional.of(Solver.PrimeFinder);}
-            case "2" -> {return Optional.empty();}
+        switch (SelectorBox.get_option(OPTIONS)) {
+            case 1 -> {return Optional.of(Solver.PrimeFinder);}
             default -> {
-                // with the ui concept below being used, this should never happen.
-                // this is, of course, a temporary function.
-                System.out.println("Invalid input.");
                 return Optional.empty();
-            }
+            } 
         }
         
         /* ui concept
