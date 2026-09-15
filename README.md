@@ -1,3 +1,5 @@
 # Math tutor
-first project for CSA
-(java re-skin of [pssv2](https://github.com/ArrowSlashArrow/problem-set-solver-v2)).
+run with `.\compile.bat`
+
+# dependencies
+- `jline`: for entering raw mode in the tty.

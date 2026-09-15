@@ -1,4 +1,3 @@
-
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -24,7 +23,6 @@ public enum Solver {
     }
 
 }
-
 
 class PrimeFinder implements Solve {
     private static Scanner s = new Scanner(System.in);

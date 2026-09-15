@@ -1,4 +1,3 @@
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -13,9 +12,9 @@ public class MainUI {
     public Optional<Solver> choose_solver(List<Solver> solvers) {
         // todo
         switch (SelectorBox.get_option(OPTIONS)) {
-            case 1 -> {return Optional.of(Solver.PrimeFinder);}
+            case 0 -> {return Optional.of(Solver.PrimeFinder);}
             default -> {
-                return Optional.empty();
+                return Optional.empty(); 
             } 
         }
         
