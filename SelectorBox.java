@@ -7,6 +7,10 @@ import org.jline.terminal.TerminalBuilder;
 import java.util.List;
 
 public class SelectorBox {
+    static final String RESET = "\u001b[0m";
+    static final String RESET_COL = "\u001b[39m";
+    static final String BOLD = "\u001b[1m";
+    static final String GREEN = "\u001b[32m";
     // returns index of selected choice.
     public static int get_option(List<String> options) {
         int max_length = 0;
@@ -54,11 +58,12 @@ public class SelectorBox {
     }
 
     public static void print_options(List<String> options, int max_length, int selected_idx) {
-        String template  = "|   %-" + max_length + "s |\n";
-        String template2 = "| > %-" + max_length + "s |\n";
-        String end = "+---" + "-".repeat(max_length) + "-+\n"; 
+        String template  = "│   %-" + max_length + "s │\n";
+        String template2 = "│ " + GREEN + BOLD + ">" + RESET_COL +" %-" + max_length + "s" + RESET +" │\n";
+        String top = "┌───" + "─".repeat(max_length) + "─┐\n"; 
+        String bottom = "└───" + "─".repeat(max_length) + "─┘\n"; 
         // build string
-        String out_str = end;
+        String out_str = top;
         int curr_idx = 0;
         for (String option : options) {
             // | <option padded right> |
@@ -69,7 +74,7 @@ public class SelectorBox {
             }
             curr_idx += 1;
         }
-        out_str += end;
+        out_str += bottom;
 
         System.out.print(out_str);
         System.out.flush();
