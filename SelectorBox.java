@@ -11,6 +11,7 @@ public class SelectorBox {
     static final String RESET_COL = "\u001b[39m";
     static final String BOLD = "\u001b[1m";
     static final String GREEN = "\u001b[32m";
+    static final String CLEAR_AFTER_CURSOR = "\u001b[0K";
 
     // returns index of selected choice.
     public static int get_option(List<String> options) {
@@ -67,10 +68,14 @@ public class SelectorBox {
 
     public static void print_options(List<String> options, int max_length, int selected_idx) {
         // styling?? :astonished:
-        String template = "│   %-" + max_length + "s │\n";
-        String template2 = "│ " + GREEN + BOLD + ">" + RESET_COL + " %-" + max_length + "s" + RESET + " │\n";
-        String top = "┌───" + "─".repeat(max_length) + "─┐\n";
-        String bottom = "└───" + "─".repeat(max_length) + "─┘\n";
+        String template = "│   %-" + max_length + "s │"
+                + CLEAR_AFTER_CURSOR + "\n";
+        String template2 = "│ " + GREEN + BOLD + ">" + RESET_COL + " %-" + max_length + "s" + RESET + " │"
+                + CLEAR_AFTER_CURSOR + "\n";
+        String top = "┌───" + "─".repeat(max_length) + "─┐"
+                + CLEAR_AFTER_CURSOR + "\n";
+        String bottom = "└───" + "─".repeat(max_length) + "─┘"
+                + CLEAR_AFTER_CURSOR + "\n";
         // build string
         String out_str = top;
         int curr_idx = 0;

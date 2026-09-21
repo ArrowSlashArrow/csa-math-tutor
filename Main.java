@@ -3,32 +3,21 @@ import java.util.Optional;
 
 // proof of concept
 public class Main {
-    private static final List<String> OPTIONS = List.of("Find the n-th prime", "Exit");
+    // index => (label, function)
+    private static final List<String> OPTION_LABELS = List.of("Find the n-th prime", "Exit");
+    private static final List<Optional<Solver>> SOLVERS = List.of(Optional.of(Solver.PrimeFinder), Optional.empty());
 
     public static void main(String[] args) {
-        List<Solver> solvers = List.of(Solver.PrimeFinder);
+        assert OPTION_LABELS.size() == SOLVERS.size(); // guarantees that arrays are parallel
+        System.out.println(
+                "If java is throwing errors, it's because it can't handle the greatness of this program. Ignore them; JVM is delusional.");
+
         while (true) {
-            Optional<Solver> s = choose_solver(solvers);
+            Optional<Solver> s = SOLVERS.get(SelectorBox.get_option(OPTION_LABELS));
             if (s.isEmpty()) {
-                // quit program
-                return;
-            }
-
-            // otherwise, run solver
-            Solver solver = s.get();
-            solver.get_solver_fn().run();
-        }
-
-    }
-
-    public static Optional<Solver> choose_solver(List<Solver> solvers) {
-        // todo
-        switch (SelectorBox.get_option(OPTIONS)) {
-            case 0 -> {
-                return Optional.of(Solver.PrimeFinder);
-            }
-            default -> {
-                return Optional.empty();
+                break; // `None` option => exit
+            } else {
+                s.get().get_solver_fn().run();
             }
         }
     }
