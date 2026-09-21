@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Optional;
 import java.util.Scanner;
 
 public enum Solver {
@@ -96,8 +99,109 @@ class PrimeFinder extends SolverBase {
 }
 
 class EquationSolver extends SolverBase {
+    String HELP = """
+    Enter variables like this:
+    var1 = value <units>, var2 = value <units>
+    No spaces needed anywhere except for between the value and units. 
+    To mark an unknown, type "var = ?"
+    Any variable can be solved for provided all but the unknown are given.
+
+    Supported equations:
+    1: vavg = (vf + vi) / 2
+    2: vavg = dx / dt
+    3: aavg = dv / dt
+    4: dx = (vi * dt) + (0.5 * a * dt^2)
+    5: vf^2 = vi ^ 2 + (2a * dx)
+
+    Accepted units for each variable:
+    vavg: m/s
+    vf: m/s
+    vi: m/s
+    dv: m/s
+    dx: m
+    dt: s
+    aavg: m/s^2
+    a: m/s^2
+    """;
+
+    HashMap<String, String> valid_units = new HashMap<>();
+
+
     @Override
     public void run() {
+        // init maps
+        valid_units.put("vavg", "m/s");
+        valid_units.put("vf", "m/s");
+        valid_units.put("vi", "m/s");
+        valid_units.put("dv", "m/s");
+        valid_units.put("dx", "m");
+        valid_units.put("dt", "s");
+        valid_units.put("aavg", "m/s^2");
+        valid_units.put("a", "m/s^2");
+        System.out.print("Enter your variables (type 'help' for help): ");
+        System.out.flush();
+        String inp = s.nextLine();
+        if (inp.equals("help")) {
+            System.out.println(HELP);
+            return;
+        }
 
+        // one line in python btw
+        ArrayList<Tuple<String, String>> vars = new ArrayList<>();
+        for (String var_segment : inp.strip().split(",")) {
+            // var segment must have only two parts: name, value +units
+            Optional<Tuple<String, String>> result = split_once(var_segment, "=");
+            if (result.isPresent()) vars.add(result.get());
+            else return;
+        }
+
+        // processed vars
+        HashMap<String, Optional<Tuple<String, String>>> pvars = new HashMap<>();
+        for (Tuple<String, String> var : vars) {
+            String key = var.a;
+
+            Optional<Tuple<String, String>> value = Optional.empty();
+            if (!var.b.equals("?")) {
+                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                if (!result.isPresent()) return;
+                value = Optional.of(result.get());
+            }
+            pvars.put(key, value);
+        }
+        
+        HashMap<String, Optional<Double>> pvars_nounits = new HashMap<>();
+        for (Tuple<String, String> var : vars) {
+            String key = var.a;
+
+            Optional<Double> value = Optional.empty();
+            if (!var.b.equals("?")) {
+                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                if (!result.isPresent()) return;
+
+                // result is (unparsed number, units)
+                try {
+                    value = Optional.of(Double.parseDouble(result.get()[0]));
+                } catch (Exception e) {
+                    System.out.println("Could not parse number: "+ result.get()[0]);
+                    return;
+                }
+                
+            }
+            pvars_nounits.put(key, value);
+        }
+
+        System.out.println("vars: " + vars + "\npvars: " + pvars);
+    }
+
+    private static Optional<Tuple<String, String>> split_once(String s, String split) {
+        String[] parts = s.split(split, -1);
+        if (parts.length == 1) {
+            System.out.println(String.format("No = in specifier for %s.", parts[0]));
+            return Optional.empty();
+        } else if (parts.length > 2) {
+            System.out.println(String.format("Too many = in specifier for %s.", parts[0]));
+            return Optional.empty();
+        }
+        return Optional.of(new Tuple<>(parts[0], parts[1]));
     }
 }
