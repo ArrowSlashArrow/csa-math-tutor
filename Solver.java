@@ -2,43 +2,55 @@ import java.util.Scanner;
 
 public enum Solver {
     // variants
-    PrimeFinder;
+    PrimeFinder,
+    Solver2;
 
-    public Solve get_solver_fn() {
+    public SolverBase get_solver_fn() {
         switch (this) {
             case PrimeFinder -> {
                 return new PrimeFinder();
+            }
+            case Solver2 -> {
+                return new Solver2DontForgetToNameMeLater();
             }
             default -> {
                 // given that we implement all of the variants of this enum,
                 // this line should never run.
 
                 System.out.println("""
-                    Create an issue on https://github.com/ArrowSlashArrow/csa-math-tutor titled 
-                    \"You didn't implement all of the variants of `Solver`, idiot.\" """);
+                        Create an issue on https://github.com/ArrowSlashArrow/csa-math-tutor titled
+                        \"You didn't implement all of the variants of `Solver`, idiot.\" """);
                 return new PrimeFinder();
             }
         }
     }
-
 }
 
-class PrimeFinder implements Solve {
-    private static Scanner s = new Scanner(System.in);
+abstract class SolverBase {
+    // private doesn't work here; classes won't be able to use the inherited
+    // variable
+    protected static Scanner s = new Scanner(System.in);
+
+    public void run() {
+        System.out.println("no .run() impl for " + getClass());
+    }
+}
+
+class PrimeFinder extends SolverBase {
     @Override
     public void run() {
         System.out.print("""
-            Enter `n` to find the n-th prime:
-            > """);
+                Enter `n` to find the n-th prime:
+                > """);
         System.out.flush(); // we're using print with no \n at the end
-        
+
         int n;
         try {
             n = Integer.parseInt(s.nextLine());
         } catch (Exception e) {
             System.out.println("Invalid input");
             return;
-        } 
+        }
 
         if (n < 1) {
             System.out.println("invalid input. n must be > 0");
@@ -51,8 +63,10 @@ class PrimeFinder implements Solve {
 
     public static Integer get_nth_prime(int n) {
         // 2, 3, 5, 7, 11, 13, ...
-        if (n == 1) return 2;
-        if (n == 2) return 3;
+        if (n == 1)
+            return 2;
+        if (n == 2)
+            return 3;
 
         int found = 2;
         int i = 3;
@@ -70,11 +84,17 @@ class PrimeFinder implements Solve {
         // starting factor 3
         // * all numbers are divisible by 1, so don't check it
         // * all numbers here are guaranteed to be odd, so 2 is pointless
-        for (int f = 3; f * f <= n; f++) {
+
+        // not gonna bother to make it faster
+        for (int f = 3; f * f <= n; f += 2) {
             if (n % f == 0) {
                 return false;
             }
         }
-        return true;    
+        return true;
     }
+}
+
+class Solver2DontForgetToNameMeLater extends SolverBase {
+
 }
