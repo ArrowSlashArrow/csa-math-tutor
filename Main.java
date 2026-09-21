@@ -4,8 +4,9 @@ import java.util.Optional;
 // proof of concept
 public class Main {
     // index => (label, function)
-    private static final List<String> OPTION_LABELS = List.of("Find the n-th prime", "Exit");
-    private static final List<Optional<Solver>> SOLVERS = List.of(Optional.of(Solver.PrimeFinder), Optional.empty());
+    private static final List<String> OPTION_LABELS = List.of("Find the n-th prime", "Solve physics equation", "Exit");
+    private static final List<Optional<Solver>> SOLVERS = List.of(Optional.of(Solver.PrimeFinder),
+            Optional.of(Solver.EquationSolver), Optional.empty());
 
     public static void main(String[] args) {
         assert OPTION_LABELS.size() == SOLVERS.size(); // guarantees that arrays are parallel

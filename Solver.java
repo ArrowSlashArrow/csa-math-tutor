@@ -3,15 +3,15 @@ import java.util.Scanner;
 public enum Solver {
     // variants
     PrimeFinder,
-    Solver2;
+    EquationSolver;
 
     public SolverBase get_solver_fn() {
         switch (this) {
             case PrimeFinder -> {
                 return new PrimeFinder();
             }
-            case Solver2 -> {
-                return new Solver2DontForgetToNameMeLater();
+            case EquationSolver -> {
+                return new EquationSolver();
             }
             default -> {
                 // given that we implement all of the variants of this enum,
@@ -95,6 +95,9 @@ class PrimeFinder extends SolverBase {
     }
 }
 
-class Solver2DontForgetToNameMeLater extends SolverBase {
+class EquationSolver extends SolverBase {
+    @Override
+    public void run() {
 
+    }
 }
