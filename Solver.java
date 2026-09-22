@@ -8,7 +8,8 @@ import java.util.Scanner;
 public enum Solver {
     // variants
     PrimeFinder,
-    EquationSolver;
+    EquationSolver,
+    CircleArea;
 
     public SolverBase get_solver_fn() {
         switch (this) {
@@ -17,6 +18,9 @@ public enum Solver {
             }
             case EquationSolver -> {
                 return new EquationSolver();
+            }
+            case CircleArea -> {
+                return new CircleArea();
             }
             default -> {
                 // given that we implement all of the variants of this enum,
@@ -44,9 +48,7 @@ abstract class SolverBase {
 class PrimeFinder extends SolverBase {
     @Override
     public void run() {
-        System.out.print("""
-                Enter `n` to find the n-th prime:
-                > """);
+        System.out.print("Enter `n` to find the n-th prime:\n> ");
         System.out.flush(); // we're using print with no \n at the end
 
         int n;
@@ -163,7 +165,7 @@ class EquationSolver extends SolverBase {
         ArrayList<Tuple<String, String>> vars = new ArrayList<>();
         for (String var_segment : inp.strip().split(",")) {
             // var segment must have only two parts: name, value +units
-            Optional<Tuple<String, String>> result = split_once(var_segment, "=");
+            Optional<Tuple<String, String>> result = Utils.split_once(var_segment, "=");
             if (result.isPresent())
                 vars.add(result.get());
             else
@@ -177,7 +179,7 @@ class EquationSolver extends SolverBase {
 
             Optional<Tuple<String, String>> value = Optional.empty();
             if (!var.b.equals("?")) {
-                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                Optional<Tuple<String, String>> result = Utils.split_once(var.b, " ");
                 if (!result.isPresent())
                     return;
                 value = Optional.of(result.get());
@@ -191,7 +193,7 @@ class EquationSolver extends SolverBase {
 
             Optional<Double> value = Optional.empty();
             if (!var.b.equals("?")) {
-                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                Optional<Tuple<String, String>> result = Utils.split_once(var.b, " ");
                 if (!result.isPresent())
                     return;
 
@@ -319,120 +321,19 @@ class EquationSolver extends SolverBase {
         }
         return 0;
     }
+}
 
-    private static Optional<Tuple<String, String>> split_once(String s, String split) {
-        String[] parts = s.split(split, -1);
-        if (parts.length == 1) {
-            System.out.println(String.format("No %s in specifier for %s.", split, parts[0]));
-            return Optional.empty();
-        } else if (parts.length > 2) {
-            System.out.println(String.format("Too many %s in specifier for %s.", split, parts[0]));
-            return Optional.empty();
-        }
-        return Optional.of(new Tuple<>(parts[0].strip(), parts[1].strip()));
-    }
-
-    static String[] getSolverEquation(int eq_idx) {
-        // autoformatter is tripping (imo these shouldnt be double indented)
-        String[][] equations = {
-                {
-                        "(vf + vi) / 2",
-                        "2 * vavg - vi",
-                        "2 * vavg - vf"
-                },
-                {
-                        "(dx) / (dt)",
-                        "dt * vavg",
-                        "(dx) / (vavg)"
-                },
-                {
-                        "dv / dt",
-                        "aavg * dt",
-                        "dv / aavg"
-                },
-                {
-                        "(vi * dt) + (0.5 * a * dt^2)",
-                        "(dx - (0.5 * a * dt^2)) / dt",
-                        "(-vi + sqrt(vi^2 + (2 * a * dx))) / a",
-                        "(dx - (vi * dt)) / (0.5 * dt^2)"
-                },
-                {
-                        "sqrt(vi^2 + (2 * a * dx))",
-                        "sqrt(vf^2 - (2 * a * dx))",
-                        "(vf^2 - vi^2) / (2 * dx)",
-                        "(vf^2 - vi^2) / (2 * a)"
-                }
-        };
-        return equations[eq_idx];
-    }
-
-    static double[] solve(int eq_idx, String unknown, HashMap<String, Optional<Double>> pvars_nounits) {
-        double vi = get_var(pvars_nounits, "vi");
-        double vf = get_var(pvars_nounits, "vf");
-        double vavg = get_var(pvars_nounits, "vavg");
-        double dx = get_var(pvars_nounits, "dx");
-        double dt = get_var(pvars_nounits, "dt");
-        double a = get_var(pvars_nounits, "a");
-        double dv = get_var(pvars_nounits, "dv");
-        double aavg = get_var(pvars_nounits, "aavg");
-
-        // lambda are a pain in the ass to store (especially in hashmaps)
-        // use switch to simplify things
-        switch (eq_idx) {
-            case 0: // vavg equations
-                if (unknown.equals("vavg"))
-                    return new double[] { (vf + vi) / 2 };
-                if (unknown.equals("vf"))
-                    return new double[] { 2 * vavg - vi };
-                if (unknown.equals("vi"))
-                    return new double[] { 2 * vavg - vf };
-
-            case 1: // vavg = dx / dt equations
-                if (unknown.equals("vavg"))
-                    return new double[] { dx / dt };
-                if (unknown.equals("dx"))
-                    return new double[] { dt * vavg };
-                if (unknown.equals("dt"))
-                    return new double[] { dx / vavg };
-
-            case 2: // aavg equations
-                if (unknown.equals("aavg"))
-                    return new double[] { dv / dt };
-                if (unknown.equals("dv"))
-                    return new double[] { aavg * dt };
-                if (unknown.equals("dt"))
-                    return new double[] { dv / aavg };
-
-            case 3: // dx equation
-                if (unknown.equals("dx"))
-                    return new double[] { (vi * dt) + (0.5 * a * dt * dt) };
-                if (unknown.equals("vi"))
-                    return new double[] { (dx - (0.5 * a * dt * dt)) / dt };
-                if (unknown.equals("dt")) {
-                    double discriminant = vi * vi + (2 * a * dx);
-                    return new double[] { (-vi + Math.sqrt(discriminant)) / a, (-vi - Math.sqrt(discriminant)) / a };
-                }
-                if (unknown.equals("a"))
-                    return new double[] { (dx - (vi * dt)) / (0.5 * dt * dt) };
-
-            case 4: // vf^2 equation
-                if (unknown.equals("vf"))
-                    return new double[] { Math.sqrt(vi * vi + (2 * a * dx)) };
-                if (unknown.equals("vi"))
-                    return new double[] { Math.sqrt(vf * vf - (2 * a * dx)) };
-                if (unknown.equals("a"))
-                    return new double[] { (vf * vf - vi * vi) / (2 * dx) };
-                if (unknown.equals("dx"))
-                    return new double[] { (vf * vf - vi * vi) / (2 * a) };
-        }
-        return new double[] {};
-    }
-
-    static double get_var(HashMap<String, Optional<Double>> map, String key) {
-        return map.getOrDefault(key, Optional.empty()).orElseGet(() -> Double.NaN);
-    }
-
-    static String format_num(double n) {
-        return String.format("%+.3f", n);
+class CircleArea extends SolverBase {
+    public void run() {
+        InputGetter i = new InputGetter("Area = [radius] ^ 2 * pi", inputs -> {
+            return Math.pow(Utils.find(inputs, "radius").parsed_value, 2.0) * Math.PI;
+        });
+        System.out.println(String.format("Area of this circle: %.3f", i.get_input()));
     }
 }
+
+// area of a circle
+// interest rate
+// 2d vector addition
+// matrix multipliction
+//
