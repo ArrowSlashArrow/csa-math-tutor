@@ -1,5 +1,7 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -98,34 +100,45 @@ class PrimeFinder extends SolverBase {
     }
 }
 
+// apologies in advance if it takes you 30 minutes to decipher this class
+// use `solver2_concept.py` as a reference
 class EquationSolver extends SolverBase {
     String HELP = """
-    Enter variables like this:
-    var1 = value <units>, var2 = value <units>
-    No spaces needed anywhere except for between the value and units. 
-    To mark an unknown, type "var = ?"
-    Any variable can be solved for provided all but the unknown are given.
 
-    Supported equations:
-    1: vavg = (vf + vi) / 2
-    2: vavg = dx / dt
-    3: aavg = dv / dt
-    4: dx = (vi * dt) + (0.5 * a * dt^2)
-    5: vf^2 = vi ^ 2 + (2a * dx)
+            Enter variables like this:
+            var1 = value <units>, var2 = value <units>
 
-    Accepted units for each variable:
-    vavg: m/s
-    vf: m/s
-    vi: m/s
-    dv: m/s
-    dx: m
-    dt: s
-    aavg: m/s^2
-    a: m/s^2
-    """;
+            No spaces needed anywhere except for between the value and units.
+            To mark an unknown, type "var = ?"
+            Any variable can be solved for provided all but the unknown are given.
+
+            Sample inputs:
+            1. aavg = 5.0 m/s^2, dv = 30 m/s, dt=?
+                - solving for dt, expect output: +6.000 s
+            2. dx = -239 m, a = -3.7 m/s^2, vf = ?, vi = 0.0 m/s
+                - solving for dt, expect output: +42.055 m/s
+            3. vi = 8.0 m/s, a = -9.81 m/s^2, dx = 0.0 m, dt = ?
+                - solving for dt, expect output: -0.000, +1.631s
+
+            Supported equations:
+            1: vavg = (vf + vi) / 2
+            2: vavg = dx / dt
+            3: aavg = dv / dt
+            4: dx = (vi * dt) + (0.5 * a * dt^2)
+            5: vf^2 = vi ^ 2 + (2a * dx)
+
+            Accepted units for each variable:
+            vavg: m/s
+            vf: m/s
+            vi: m/s
+            dv: m/s
+            dx: m
+            dt: s
+            aavg: m/s^2
+            a: m/s^2
+            """;
 
     HashMap<String, String> valid_units = new HashMap<>();
-
 
     @Override
     public void run() {
@@ -151,8 +164,10 @@ class EquationSolver extends SolverBase {
         for (String var_segment : inp.strip().split(",")) {
             // var segment must have only two parts: name, value +units
             Optional<Tuple<String, String>> result = split_once(var_segment, "=");
-            if (result.isPresent()) vars.add(result.get());
-            else return;
+            if (result.isPresent())
+                vars.add(result.get());
+            else
+                return;
         }
 
         // processed vars
@@ -163,12 +178,13 @@ class EquationSolver extends SolverBase {
             Optional<Tuple<String, String>> value = Optional.empty();
             if (!var.b.equals("?")) {
                 Optional<Tuple<String, String>> result = split_once(var.b, " ");
-                if (!result.isPresent()) return;
+                if (!result.isPresent())
+                    return;
                 value = Optional.of(result.get());
             }
             pvars.put(key, value);
         }
-        
+
         HashMap<String, Optional<Double>> pvars_nounits = new HashMap<>();
         for (Tuple<String, String> var : vars) {
             String key = var.a;
@@ -176,32 +192,247 @@ class EquationSolver extends SolverBase {
             Optional<Double> value = Optional.empty();
             if (!var.b.equals("?")) {
                 Optional<Tuple<String, String>> result = split_once(var.b, " ");
-                if (!result.isPresent()) return;
+                if (!result.isPresent())
+                    return;
 
                 // result is (unparsed number, units)
                 try {
-                    value = Optional.of(Double.parseDouble(result.get()[0]));
+                    value = Optional.of(Double.parseDouble(result.get().a));
                 } catch (Exception e) {
-                    System.out.println("Could not parse number: "+ result.get()[0]);
+                    System.out.println("Could not parse number: " + result.get().a);
                     return;
                 }
-                
+
             }
             pvars_nounits.put(key, value);
         }
 
-        System.out.println("vars: " + vars + "\npvars: " + pvars);
+        // get unknown and validate input
+        String unknown = null;
+        for (HashMap.Entry<String, Optional<Tuple<String, String>>> entry : pvars.entrySet()) {
+            String var = entry.getKey();
+            Optional<Tuple<String, String>> val = entry.getValue();
+
+            if (val.isEmpty()) {
+                if (unknown != null) {
+                    System.out.println("Too many unknowns. Solving for one unknown at most.");
+                    return;
+                }
+                unknown = var;
+            } else {
+                Tuple<String, String> unwrapped = val.get();
+                // validate units
+                String units = unwrapped.b;
+                if (!valid_units.containsKey(var)) {
+                    System.out
+                            .println("Unknown variable " + var + ". Supported variables: " + valid_units.keySet());
+                    return;
+                }
+                if (!valid_units.get(var).equals(units)) {
+                    System.out.println(
+                            "Invalid units for " + var + ". Acceptable units are " + valid_units.get(var));
+                    return;
+                }
+            }
+        }
+
+        if (unknown == null) {
+            System.out.println("No unknowns given (nothing to solve for)");
+            return;
+        }
+
+        List<String> sorted_vars = new ArrayList<>(pvars.keySet());
+        Collections.sort(sorted_vars);
+        String eq_key = String.join(",", sorted_vars);
+
+        int eq_idx = 0;
+        if (eq_key.equals("vavg,vf,vi"))
+            eq_idx = 0;
+        else if (eq_key.equals("dt,dx,vavg"))
+            eq_idx = 1;
+        else if (eq_key.equals("aavg,dt,dv"))
+            eq_idx = 2;
+        else if (eq_key.equals("a,dt,dx,vi"))
+            eq_idx = 3;
+        else if (eq_key.equals("a,dx,vf,vi"))
+            eq_idx = 4;
+        else {
+            System.out.println("No known equation found from variables. Type 'help' to see supported equations.");
+            return;
+        }
+
+        // get eq here
+        String[] solverEqs = getSolverEquation(eq_idx);
+        String eq = solverEqs[get_unknown_idx(unknown, eq_idx)];
+        System.out.println("solving equation: \n" + unknown + " = " + eq);
+
+        // substitute givens (for displaying)
+        List<HashMap.Entry<String, Optional<Tuple<String, String>>>> sorted_entries = new ArrayList<>(pvars.entrySet());
+        sorted_entries.sort((a, b) -> Integer.compare(b.getKey().length(), a.getKey().length()));
+
+        for (HashMap.Entry<String, Optional<Tuple<String, String>>> entry : sorted_entries) {
+            String var = entry.getKey();
+            Optional<Tuple<String, String>> val = entry.getValue();
+            if (val.isPresent()) {
+                Tuple<String, String> unwrapped = val.get();
+                eq = eq.replace(var, unwrapped.a + " " + unwrapped.b);
+            }
+        }
+        System.out.println(unknown + " = " + eq);
+
+        // then solve
+        // results here could be more than one because dt equation is a parabola
+        // (may have 2 solutions)
+        double[] results = solve(eq_idx, unknown, pvars_nounits);
+
+        // then filter negatives if the var is dt (time can't go backwards, obviously)
+        List<Double> filtered_results = new ArrayList<>();
+        for (double r : results) {
+            if (r >= 0 || !unknown.equals("dt")) {
+                filtered_results.add(r);
+            }
+        }
+
+        // Format output
+        String output = unknown + " = ";
+        for (int i = 0; i < filtered_results.size(); i++) {
+            if (i > 0)
+                output += ", ";
+            output += format_num(filtered_results.get(i));
+        }
+        output += " " + valid_units.get(unknown);
+        System.out.println(output);
+    }
+
+    static int get_unknown_idx(String unknown, int eq_idx) {
+        String[] unknowns = new String[] {
+                "vavg,vf,vi",
+                "vavg,dx,dt",
+                "aavg,dv,dt",
+                "dx,vi,dt,a",
+                "vf,vi,a,dx"
+        };
+        String[] variables = unknowns[eq_idx].split(",");
+        for (int i = 0; i < variables.length; i++) {
+            if (variables[i].equals(unknown))
+                return i;
+        }
+        return 0;
     }
 
     private static Optional<Tuple<String, String>> split_once(String s, String split) {
         String[] parts = s.split(split, -1);
         if (parts.length == 1) {
-            System.out.println(String.format("No = in specifier for %s.", parts[0]));
+            System.out.println(String.format("No %s in specifier for %s.", split, parts[0]));
             return Optional.empty();
         } else if (parts.length > 2) {
-            System.out.println(String.format("Too many = in specifier for %s.", parts[0]));
+            System.out.println(String.format("Too many %s in specifier for %s.", split, parts[0]));
             return Optional.empty();
         }
-        return Optional.of(new Tuple<>(parts[0], parts[1]));
+        return Optional.of(new Tuple<>(parts[0].strip(), parts[1].strip()));
+    }
+
+    static String[] getSolverEquation(int eq_idx) {
+        // autoformatter is tripping (imo these shouldnt be double indented)
+        String[][] equations = {
+                {
+                        "(vf + vi) / 2",
+                        "2 * vavg - vi",
+                        "2 * vavg - vf"
+                },
+                {
+                        "(dx) / (dt)",
+                        "dt * vavg",
+                        "(dx) / (vavg)"
+                },
+                {
+                        "dv / dt",
+                        "aavg * dt",
+                        "dv / aavg"
+                },
+                {
+                        "(vi * dt) + (0.5 * a * dt^2)",
+                        "(dx - (0.5 * a * dt^2)) / dt",
+                        "(-vi + sqrt(vi^2 + (2 * a * dx))) / a",
+                        "(dx - (vi * dt)) / (0.5 * dt^2)"
+                },
+                {
+                        "sqrt(vi^2 + (2 * a * dx))",
+                        "sqrt(vf^2 - (2 * a * dx))",
+                        "(vf^2 - vi^2) / (2 * dx)",
+                        "(vf^2 - vi^2) / (2 * a)"
+                }
+        };
+        return equations[eq_idx];
+    }
+
+    static double[] solve(int eq_idx, String unknown, HashMap<String, Optional<Double>> pvars_nounits) {
+        double vi = get_var(pvars_nounits, "vi");
+        double vf = get_var(pvars_nounits, "vf");
+        double vavg = get_var(pvars_nounits, "vavg");
+        double dx = get_var(pvars_nounits, "dx");
+        double dt = get_var(pvars_nounits, "dt");
+        double a = get_var(pvars_nounits, "a");
+        double dv = get_var(pvars_nounits, "dv");
+        double aavg = get_var(pvars_nounits, "aavg");
+
+        // lambda are a pain in the ass to store (especially in hashmaps)
+        // use switch to simplify things
+        switch (eq_idx) {
+            case 0: // vavg equations
+                if (unknown.equals("vavg"))
+                    return new double[] { (vf + vi) / 2 };
+                if (unknown.equals("vf"))
+                    return new double[] { 2 * vavg - vi };
+                if (unknown.equals("vi"))
+                    return new double[] { 2 * vavg - vf };
+
+            case 1: // vavg = dx / dt equations
+                if (unknown.equals("vavg"))
+                    return new double[] { dx / dt };
+                if (unknown.equals("dx"))
+                    return new double[] { dt * vavg };
+                if (unknown.equals("dt"))
+                    return new double[] { dx / vavg };
+
+            case 2: // aavg equations
+                if (unknown.equals("aavg"))
+                    return new double[] { dv / dt };
+                if (unknown.equals("dv"))
+                    return new double[] { aavg * dt };
+                if (unknown.equals("dt"))
+                    return new double[] { dv / aavg };
+
+            case 3: // dx equation
+                if (unknown.equals("dx"))
+                    return new double[] { (vi * dt) + (0.5 * a * dt * dt) };
+                if (unknown.equals("vi"))
+                    return new double[] { (dx - (0.5 * a * dt * dt)) / dt };
+                if (unknown.equals("dt")) {
+                    double discriminant = vi * vi + (2 * a * dx);
+                    return new double[] { (-vi + Math.sqrt(discriminant)) / a, (-vi - Math.sqrt(discriminant)) / a };
+                }
+                if (unknown.equals("a"))
+                    return new double[] { (dx - (vi * dt)) / (0.5 * dt * dt) };
+
+            case 4: // vf^2 equation
+                if (unknown.equals("vf"))
+                    return new double[] { Math.sqrt(vi * vi + (2 * a * dx)) };
+                if (unknown.equals("vi"))
+                    return new double[] { Math.sqrt(vf * vf - (2 * a * dx)) };
+                if (unknown.equals("a"))
+                    return new double[] { (vf * vf - vi * vi) / (2 * dx) };
+                if (unknown.equals("dx"))
+                    return new double[] { (vf * vf - vi * vi) / (2 * a) };
+        }
+        return new double[] {};
+    }
+
+    static double get_var(HashMap<String, Optional<Double>> map, String key) {
+        return map.getOrDefault(key, Optional.empty()).orElseGet(() -> Double.NaN);
+    }
+
+    static String format_num(double n) {
+        return String.format("%+.3f", n);
     }
 }

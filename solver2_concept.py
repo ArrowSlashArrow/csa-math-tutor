@@ -53,31 +53,31 @@ from math import sqrt
 
 solvers = [
     {
-        "vavg": lambda pvars: (pvars["vf"] + pvars["vi"]) / 2,
-        "vf": lambda pvars: 2 * pvars["vavg"] - pvars["vi"],
-        "vi": lambda pvars: 2 * pvars["vavg"] - pvars["vf"]
+        "vavg": lambda pvars: ((pvars["vf"] + pvars["vi"]) / 2,),
+        "vf": lambda pvars: (2 * pvars["vavg"] - pvars["vi"],),
+        "vi": lambda pvars: (2 * pvars["vavg"] - pvars["vf"],),
     },
     {
-        "vavg": lambda pvars: (pvars["dx"] / pvars["dt"]),
-        "dx": lambda pvars: (pvars["dt"] * pvars["vavg"]),
-        "dt": lambda pvars: pvars["dx"] / pvars["vavg"]
+        "vavg": lambda pvars: ((pvars["dx"] / pvars["dt"]),),
+        "dx": lambda pvars: ((pvars["dt"] * pvars["vavg"]),),
+        "dt": lambda pvars: (pvars["dx"] / pvars["vavg"],),
     },
     {
-        "aavg": lambda pvars: pvars["dv"] / pvars["dt"],
-        "dv": lambda pvars: pvars["aavg"] * pvars["dt"],
-        "dt": lambda pvars: pvars["dv"] / pvars["aavg"]
+        "aavg": lambda pvars: (pvars["dv"] / pvars["dt"],),
+        "dv": lambda pvars: (pvars["aavg"] * pvars["dt"],),
+        "dt": lambda pvars: (pvars["dv"] / pvars["aavg"],),
     },
     {
-        "dx": lambda pvars: (pvars["vi"] * pvars["dt"]) + (0.5 * pvars["a"] * pvars["dt"]**2),
-        "vi": lambda pvars: (pvars["dx"] - (0.5 * pvars["a"] * pvars["dt"]^2)) / pvars["dt"],
+        "dx": lambda pvars: ((pvars["vi"] * pvars["dt"]) + (0.5 * pvars["a"] * pvars["dt"]**2),),
+        "vi": lambda pvars: ((pvars["dx"] - (0.5 * pvars["a"] * pvars["dt"]^2)) / pvars["dt"],),
         "dt": lambda pvars: ((-pvars["vi"] + sqrt(pvars["vi"]**2 + (2 * pvars["a"] * pvars["dx"]))) / pvars["a"], (-pvars["vi"] - sqrt(pvars["vi"]**2 + (2 * pvars["a"] * pvars["dx"]))) / pvars["a"]),
-        "a": lambda pvars: (pvars["dx"] - (pvars["vi"] * pvars["dt"])) / (0.5 * pvars["dt"]**2),
+        "a": lambda pvars: ((pvars["dx"] - (pvars["vi"] * pvars["dt"])) / (0.5 * pvars["dt"]**2),),
     },
     {
-        "vf": lambda pvars: sqrt(pvars["vi"]**2 + (2 * pvars["a"] * pvars["dx"])),
-        "vi": lambda pvars: sqrt(pvars["vf"]**2 - (2 * pvars["a"] * pvars["dx"])),
-        "a": lambda pvars: (pvars["vf"]**2 - pvars["vi"]**2) / 2 * pvars["dx"],
-        "dx": lambda pvars: (pvars["vf"]**2 - pvars["vi"]**2) / 2 * pvars["a"],
+        "vf": lambda pvars: (sqrt(pvars["vi"]**2 + (2 * pvars["a"] * pvars["dx"])),),
+        "vi": lambda pvars: (sqrt(pvars["vf"]**2 - (2 * pvars["a"] * pvars["dx"])),),
+        "a": lambda pvars: ((pvars["vf"]**2 - pvars["vi"]**2) / 2 * pvars["dx"],),
+        "dx": lambda pvars: ((pvars["vf"]**2 - pvars["vi"]**2) / 2 * pvars["a"],),
     },
 ]
 
@@ -137,5 +137,6 @@ for var, val in dict(sorted(pvars.items(), key = lambda item: len(item[0]), reve
         eq = eq.replace(var, ' '.join(val))
 print(f"{unknown} = {eq}")
 
-result = tuple(solvers[eq_idx][unknown](pvars_nounits))
+# filter all negative dt results
+result = tuple([x for x in solvers[eq_idx][unknown](pvars_nounits) if x >= 0 or unknown != "dt"])
 print(f"{unknown} = {", ".join([format_num(r) for r in result])}{valid_units[unknown]}")
