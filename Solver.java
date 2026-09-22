@@ -6,7 +6,8 @@ import java.util.Scanner;
 public enum Solver {
     // variants
     PrimeFinder,
-    EquationSolver;
+    EquationSolver,
+    CircleArea;
 
     public SolverBase get_solver_fn() {
         switch (this) {
@@ -15,6 +16,9 @@ public enum Solver {
             }
             case EquationSolver -> {
                 return new EquationSolver();
+            }
+            case CircleArea -> {
+                return new CircleArea();
             }
             default -> {
                 // given that we implement all of the variants of this enum,
@@ -42,9 +46,7 @@ abstract class SolverBase {
 class PrimeFinder extends SolverBase {
     @Override
     public void run() {
-        System.out.print("""
-                Enter `n` to find the n-th prime:
-                > """);
+        System.out.print("Enter `n` to find the n-th prime:\n> ");
         System.out.flush(); // we're using print with no \n at the end
 
         int n;
@@ -150,7 +152,7 @@ class EquationSolver extends SolverBase {
         ArrayList<Tuple<String, String>> vars = new ArrayList<>();
         for (String var_segment : inp.strip().split(",")) {
             // var segment must have only two parts: name, value +units
-            Optional<Tuple<String, String>> result = split_once(var_segment, "=");
+            Optional<Tuple<String, String>> result = Utils.split_once(var_segment, "=");
             if (result.isPresent()) vars.add(result.get());
             else return;
         }
@@ -162,7 +164,7 @@ class EquationSolver extends SolverBase {
 
             Optional<Tuple<String, String>> value = Optional.empty();
             if (!var.b.equals("?")) {
-                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                Optional<Tuple<String, String>> result = Utils.split_once(var.b, " ");
                 if (!result.isPresent()) return;
                 value = Optional.of(result.get());
             }
@@ -175,14 +177,14 @@ class EquationSolver extends SolverBase {
 
             Optional<Double> value = Optional.empty();
             if (!var.b.equals("?")) {
-                Optional<Tuple<String, String>> result = split_once(var.b, " ");
+                Optional<Tuple<String, String>> result = Utils.split_once(var.b, " ");
                 if (!result.isPresent()) return;
 
                 // result is (unparsed number, units)
                 try {
-                    value = Optional.of(Double.parseDouble(result.get()[0]));
+                    value = Optional.of(Double.parseDouble(result.get().a));
                 } catch (Exception e) {
-                    System.out.println("Could not parse number: "+ result.get()[0]);
+                    System.out.println("Could not parse number: "+ result.get().a);
                     return;
                 }
                 
@@ -192,16 +194,19 @@ class EquationSolver extends SolverBase {
 
         System.out.println("vars: " + vars + "\npvars: " + pvars);
     }
+}
 
-    private static Optional<Tuple<String, String>> split_once(String s, String split) {
-        String[] parts = s.split(split, -1);
-        if (parts.length == 1) {
-            System.out.println(String.format("No = in specifier for %s.", parts[0]));
-            return Optional.empty();
-        } else if (parts.length > 2) {
-            System.out.println(String.format("Too many = in specifier for %s.", parts[0]));
-            return Optional.empty();
-        }
-        return Optional.of(new Tuple<>(parts[0], parts[1]));
+class CircleArea extends SolverBase {
+    public void run() {
+        InputGetter i = new InputGetter("Area = [radius] ^ 2 * pi", inputs -> {
+            return Math.pow(Utils.find(inputs, "radius").parsed_value, 2.0) * Math.PI;
+        });
+        System.out.println(String.format("Area of this circle: %.3f", i.get_input()));
     }
 }
+
+// area of a circle
+// interest rate
+// 2d vector addition
+// matrix multipliction
+// 
