@@ -30,14 +30,14 @@ public class Utils {
             System.out.println(String.format("Too many = in specifier for %s.", parts[0]));
             return Optional.empty();
         }
-        return Optional.of(new Tuple<>(parts[0], parts[1]));
+        return Optional.of(new Tuple<>(parts[0].strip(), parts[1].strip()));
     }
 
     public static <A, B> B find(ArrayList<Tuple<A, B>> list, A target) {
         for (Tuple<A, B> entry : list) {
-            if (entry.a == target) {
+            if (entry.a.equals(target)) {
                 return entry.b;
-            } 
+            }
         }
         return list.get(0).b;
     }

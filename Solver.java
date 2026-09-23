@@ -9,7 +9,9 @@ public enum Solver {
     // variants
     PrimeFinder,
     EquationSolver,
-    CircleArea;
+    CircleArea,
+    Hypotenuse,
+    ExponentialEq;
 
     public SolverBase get_solver_fn() {
         switch (this) {
@@ -21,6 +23,12 @@ public enum Solver {
             }
             case CircleArea -> {
                 return new CircleArea();
+            }
+            case ExponentialEq -> {
+                return new ExponentialEq();
+            }
+            case Hypotenuse -> {
+                return new Hypotenuse();
             }
             default -> {
                 // given that we implement all of the variants of this enum,
@@ -321,10 +329,115 @@ class EquationSolver extends SolverBase {
         }
         return 0;
     }
+
+    static String[] getSolverEquation(int eq_idx) {
+        // autoformatter is tripping (imo these shouldnt be double indented)
+        String[][] equations = {
+                {
+                        "(vf + vi) / 2",
+                        "2 * vavg - vi",
+                        "2 * vavg - vf"
+                },
+                {
+                        "(dx) / (dt)",
+                        "dt * vavg",
+                        "(dx) / (vavg)"
+                },
+                {
+                        "dv / dt",
+                        "aavg * dt",
+                        "dv / aavg"
+                },
+                {
+                        "(vi * dt) + (0.5 * a * dt^2)",
+                        "(dx - (0.5 * a * dt^2)) / dt",
+                        "(-vi + sqrt(vi^2 + (2 * a * dx))) / a",
+                        "(dx - (vi * dt)) / (0.5 * dt^2)"
+                },
+                {
+                        "sqrt(vi^2 + (2 * a * dx))",
+                        "sqrt(vf^2 - (2 * a * dx))",
+                        "(vf^2 - vi^2) / (2 * dx)",
+                        "(vf^2 - vi^2) / (2 * a)"
+                }
+        };
+        return equations[eq_idx];
+    }
+
+    static double[] solve(int eq_idx, String unknown, HashMap<String, Optional<Double>> pvars_nounits) {
+        double vi = get_var(pvars_nounits, "vi");
+        double vf = get_var(pvars_nounits, "vf");
+        double vavg = get_var(pvars_nounits, "vavg");
+        double dx = get_var(pvars_nounits, "dx");
+        double dt = get_var(pvars_nounits, "dt");
+        double a = get_var(pvars_nounits, "a");
+        double dv = get_var(pvars_nounits, "dv");
+        double aavg = get_var(pvars_nounits, "aavg");
+
+        // lambda are a pain in the ass to store (especially in hashmaps)
+        // use switch to simplify things
+        switch (eq_idx) {
+            case 0: // vavg equations
+                if (unknown.equals("vavg"))
+                    return new double[] { (vf + vi) / 2 };
+                if (unknown.equals("vf"))
+                    return new double[] { 2 * vavg - vi };
+                if (unknown.equals("vi"))
+                    return new double[] { 2 * vavg - vf };
+
+            case 1: // vavg = dx / dt equations
+                if (unknown.equals("vavg"))
+                    return new double[] { dx / dt };
+                if (unknown.equals("dx"))
+                    return new double[] { dt * vavg };
+                if (unknown.equals("dt"))
+                    return new double[] { dx / vavg };
+
+            case 2: // aavg equations
+                if (unknown.equals("aavg"))
+                    return new double[] { dv / dt };
+                if (unknown.equals("dv"))
+                    return new double[] { aavg * dt };
+                if (unknown.equals("dt"))
+                    return new double[] { dv / aavg };
+
+            case 3: // dx equation
+                if (unknown.equals("dx"))
+                    return new double[] { (vi * dt) + (0.5 * a * dt * dt) };
+                if (unknown.equals("vi"))
+                    return new double[] { (dx - (0.5 * a * dt * dt)) / dt };
+                if (unknown.equals("dt")) {
+                    double discriminant = vi * vi + (2 * a * dx);
+                    return new double[] { (-vi + Math.sqrt(discriminant)) / a, (-vi - Math.sqrt(discriminant)) / a };
+                }
+                if (unknown.equals("a"))
+                    return new double[] { (dx - (vi * dt)) / (0.5 * dt * dt) };
+
+            case 4: // vf^2 equation
+                if (unknown.equals("vf"))
+                    return new double[] { Math.sqrt(vi * vi + (2 * a * dx)) };
+                if (unknown.equals("vi"))
+                    return new double[] { Math.sqrt(vf * vf - (2 * a * dx)) };
+                if (unknown.equals("a"))
+                    return new double[] { (vf * vf - vi * vi) / (2 * dx) };
+                if (unknown.equals("dx"))
+                    return new double[] { (vf * vf - vi * vi) / (2 * a) };
+        }
+        return new double[] {};
+    }
+
+    static double get_var(HashMap<String, Optional<Double>> map, String key) {
+        return map.getOrDefault(key, Optional.empty()).orElseGet(() -> Double.NaN);
+    }
+
+    static String format_num(double n) {
+        return String.format("%+.3f", n);
+    }
 }
 
 class CircleArea extends SolverBase {
     public void run() {
+        System.out.println("\nArea = radius^2 * pi\n");
         InputGetter i = new InputGetter("Area = [radius] ^ 2 * pi", inputs -> {
             return Math.pow(Utils.find(inputs, "radius").parsed_value, 2.0) * Math.PI;
         });
@@ -332,8 +445,36 @@ class CircleArea extends SolverBase {
     }
 }
 
-// area of a circle
-// interest rate
+class ExponentialEq extends SolverBase {
+    public void run() {
+        System.out.println("\nA_t = A_0 * e^kt rearranged to solve for k:\nk = \n(A_t / A_0) / t\n");
+        InputGetter i = new InputGetter("k = ln([at]/[a0])/[t]", inputs -> {
+            return Math.log(Utils.find(inputs, "at").parsed_value / Utils.find(inputs, "a0").parsed_value)
+                    / Utils.find(inputs, "t").parsed_value;
+        });
+
+        double k = i.get_input();
+        System.out.println("A_t = A_0 * e^kt:");
+        System.out.println(String.format("k = %.3f\n", k));
+
+        System.out.println("\nSecond equation: A_t = A_0 * e^kt\n");
+        InputGetter i2 = new InputGetter("[at] = [at] * e^(k*[t])", inputs -> {
+            return Utils.find(inputs, "at").parsed_value * Math.exp(k * Utils.find(inputs, "t").parsed_value);
+        });
+        i2.get_input();
+    }
+}
+
+class Hypotenuse extends SolverBase {
+    public void run() {
+        System.out.println("\nHypotenuse of a right triangle:\nc = sqrt(a^2 + b^2)\n");
+        InputGetter i = new InputGetter("c = sqrt([a]^2 + [b]^2)", inputs -> {
+            return Math.hypot(Utils.find(inputs, "a").parsed_value, Utils.find(inputs, "b").parsed_value);
+        });
+        System.out.println(String.format("Hypotenuse of the triangle: %.3f", i.get_input()));
+    }
+}
+
 // 2d vector addition
 // matrix multipliction
 //

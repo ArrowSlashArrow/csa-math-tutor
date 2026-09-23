@@ -10,13 +10,10 @@ import org.jline.terminal.TerminalBuilder;
 class Segment {
     String label;
     Boolean is_var;
-    // where is it in the original string
-    Integer ch_offset;
 
-    public Segment(String s, Boolean b, Integer i) {
+    public Segment(String s, Boolean b) {
         this.label = s;
         this.is_var = b;
-        this.ch_offset = i;
     }
 
     public String toString() {
@@ -50,9 +47,11 @@ public class InputGetter {
 
     // segment, is variable
     ArrayList<Segment> segments = new ArrayList<>();
+    ArrayList<String> input_segments = new ArrayList<>();
     int at_idx = 0;
     int seg_count = 0;
     int cursor_position = 0;
+    long lines = 0;
 
     // (variable, segment value)
     // index is necessary for input purposes
@@ -65,10 +64,14 @@ public class InputGetter {
     // - segments = " pi * ", "^2"
     public InputGetter(String input, Function<ArrayList<Tuple<String, SegmentNumber>>, Double> evaluator) {
         Optional<Tuple<String, String>> result = Utils.split_once(input, "=");
-        
+
         if (result.isEmpty()) { // throw an error
             int x = 1 / 0;
         }
+
+        this.lines = input.chars()
+                .filter(ch -> ch == '\n')
+                .count() + 1;
 
         // we don't care about the left side since
         // we are gonna display the input in its place
@@ -80,13 +83,16 @@ public class InputGetter {
         for (String ch : eq.split("(?!^)")) {
             if (ch.equals("[") && !in_value_getter) {
                 if (current_segment.length() != 0) {
-                    this.segments.add(new Segment(current_segment, false, ch_idx));
+                    this.segments.add(new Segment(current_segment, false));
+                    this.seg_count += 1;
                     current_segment = "";
                 }
                 in_value_getter = true;
             } else if (ch.equals("]") && in_value_getter) {
                 this.inputs.add(new Tuple<>(current_segment, new SegmentNumber("", Double.NaN, inputs.size())));
-                this.segments.add(new Segment(current_segment, true, ch_idx));
+                this.segments.add(new Segment(current_segment, true));
+                this.input_segments.add(current_segment);
+
                 current_segment = "";
                 in_value_getter = false;
             } else {
@@ -95,16 +101,15 @@ public class InputGetter {
             ch_idx += 1;
         }
 
-        this.segments.add(new Segment(current_segment, false, ch_idx));
+        this.segments.add(new Segment(current_segment, false));
 
-        this.seg_count = this.segments.size();
         this.evaluator = evaluator;
     }
 
-    // up   - before
+    // up - before
     // down - next
     public double get_input() {
-        System.out.println("placeholder line");
+        System.out.println("Type numbers with keyboard. Use up/down arrow to move between inputs");
         this.render_state();
         System.out.flush();
         while (true) {
@@ -140,9 +145,8 @@ public class InputGetter {
                                 this.at_idx = Math.min(this.seg_count - 1, this.at_idx + 1);
                                 quit_reader_loop = true;
                             }
-                        } else if (ch == 8) {
-                            // push char to currently selected idx
-                            if (this.inputs.get(this.at_idx).b.raw_value.length() > 0 ) {
+                        } else if (ch == 8) { // backspace
+                            if (this.inputs.get(this.at_idx).b.raw_value.length() > 0) {
                                 String orig = this.inputs.get(this.at_idx).b.raw_value;
                                 orig = orig.substring(0, orig.length() - 1);
                                 this.inputs.get(this.at_idx).b.raw_value = orig;
@@ -162,7 +166,7 @@ public class InputGetter {
     }
 
     public double eval_self() {
-        for (Tuple<String, SegmentNumber> entry : this.inputs) { 
+        for (Tuple<String, SegmentNumber> entry : this.inputs) {
             entry.b.update();
         }
         return this.evaluator.apply(this.inputs);
@@ -171,21 +175,26 @@ public class InputGetter {
     public void render_state() {
         double result = this.eval_self();
         String s = String.format("%.3f = ", result);
-        
+
         int field_count = 0;
         for (Segment segment : segments) {
             if (segment.is_var) {
-                String first_segment = "(" + Utils.find(this.inputs, this.segments.get(this.at_idx).label).raw_value;
-                s += first_segment + ")";
+                String raw = Utils.find(this.inputs, this.input_segments.get(field_count)).raw_value;
+                if (raw.length() == 0) {
+                    raw = "____";
+                }
+                s += "(" + raw + ")";
 
                 if (field_count == this.at_idx) {
-                    this.cursor_position = s.length();
+                    this.cursor_position = s.length() - 1;
                 }
+                field_count += 1;
             } else {
                 // this is a static string
                 s += segment.label;
             }
         }
+        System.out.println("\u001b[" + Integer.toString((int) this.lines) + "F\r");
         System.out.print("\r" + s + CLEAR_AFTER_CURSOR + "\u001b[" + this.cursor_position + "G");
     }
 }
